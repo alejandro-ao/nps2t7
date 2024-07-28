@@ -109,7 +109,7 @@ const FileNavigation = () => {
 
   const handleDelete = async (path: string, name: string) => {
     try {
-      await axios.delete(`${API_URL}/files/${name}?path=${path}`);
+      await axios.delete(`${API_URL}/files/${name}?path=${path.replace(/^\/Root/, '')}`);
       fetchFileSystem();
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -118,18 +118,27 @@ const FileNavigation = () => {
 
   const handleDialogSubmit = async () => {
     try {
+      const payload =
+        dialogItemType === 'folder'
+          ? {
+              name: dialogItemName,
+              type: 'folder' as const,
+              children: [],
+            }
+          : {
+              name: dialogItemName,
+              type: 'file' as const,
+            };
+
       if (dialogType === 'create') {
-        await axios.post(`${API_URL}/files/${currentPath}`, {
-          name: dialogItemName,
-          type: dialogItemType,
-          children: dialogItemType === 'folder' ? [] : undefined,
+        await axios.post(`${API_URL}/files`, payload, {
+          params: { path: currentPath.replace(/^\/Root/, '') },
         });
       } else {
-        await axios.put(`${API_URL}/files/${dialogItemName}?path=${currentPath}`, {
-          name: dialogItemName,
-          type: dialogItemType,
-          children: dialogItemType === 'folder' ? [] : undefined,
-        });
+        await axios.put(
+          `${API_URL}/files/${dialogItemName}?path=${currentPath.replace(/^\/Root/, '')}`,
+          payload
+        );
       }
       setDialogOpen(false);
       fetchFileSystem();
